@@ -16,16 +16,36 @@ export class ChatMinigameService {
 	private static activeGames: Map<string, IActiveMinigame> = new Map();
 
 	private static readonly MINECRAFT_WORDS = [
-		{ word: "kim cuong", aliases: ["kimcuong", "diamond"], display: "K-I-M-C-Ư-Ơ-N-G" },
-		{ word: "netherite", aliases: ["netherite"], display: "N-E-T-H-E-R-I-T-E" },
-		{ word: "ngoc ender", aliases: ["ngocender", "enderpearl", "ender pearl"], display: "N-G-Ọ-C-E-N-D-E-R" },
-		{ word: "trung rong", aliases: ["trungrong", "dragon egg"], display: "T-R-Ứ-N-G-R-Ồ-N-G" },
-		{ word: "tao vang", aliases: ["taovang", "golden apple", "gapple"], display: "T-Á-O-V-À-N-G" },
-		{ word: "than da", aliases: ["thanda", "coal"], display: "T-H-A-N-Đ-Á" },
-		{ word: "dan lang", aliases: ["danlang", "villager"], display: "D-Â-N-L-À-N-G" },
-		{ word: "hop shulker", aliases: ["hopshulker", "shulker box", "shulker"], display: "H-Ộ-P-S-H-U-L-K-E-R" },
-		{ word: "canh elytra", aliases: ["canhelytra", "elytra"], display: "C-Á-N-H-E-L-Y-T-R-A" },
-		{ word: "dat set", aliases: ["datset", "clay"], display: "Đ-Ấ-T-S-É-T" },
+		// Khoáng sản & Vật phẩm
+		{ word: "kim cuong", aliases: ["kimcuong", "diamond", "kc", "kim cương"], display: "Diamond" },
+		{ word: "netherite", aliases: ["netherite", "thoi netherite", "manh netherite"], display: "Netherite" },
+		{ word: "ngoc ender", aliases: ["ngocender", "enderpearl", "ender pearl", "ngọc ender", "pearl"], display: "Ender Pearl" },
+		{ word: "trung rong", aliases: ["trungrong", "dragon egg", "dragonegg", "trứng rồng"], display: "Dragon Egg" },
+		{ word: "tao vang", aliases: ["taovang", "golden apple", "gapple", "táo vàng", "gap"], display: "Golden Apple" },
+		{ word: "than da", aliases: ["thanda", "coal", "than đá", "than"], display: "Coal" },
+		{ word: "canh elytra", aliases: ["canhelytra", "elytra", "cánh elytra", "canh"], display: "Elytra" },
+		{ word: "hop shulker", aliases: ["hopshulker", "shulker box", "shulkerbox", "shulker", "hộp shulker"], display: "Shulker Box" },
+		{ word: "dat set", aliases: ["datset", "clay", "đất sét"], display: "Clay" },
+		{ word: "da do", aliases: ["dado", "redstone", "đá đỏ"], display: "Redstone" },
+		{ word: "thuoc no", aliases: ["thuocno", "gunpowder", "thuốc nổ"], display: "Gunpowder" },
+		{ word: "phao hoa", aliases: ["phaohoa", "firework", "fireworks", "pháo hoa"], display: "Firework" },
+		{ word: "totem", aliases: ["totem of undying", "bat tu", "totem bất tử", "totem"], display: "Totem of Undying" },
+
+		// Sinh vật (Mobs)
+		{ word: "dan lang", aliases: ["danlang", "villager", "dân làng", "npc"], display: "Villager" },
+		{ word: "quai no", aliases: ["quaino", "creeper", "quái nổ"], display: "Creeper" },
+		{ word: "nguoi ender", aliases: ["nguoiender", "enderman", "người ender"], display: "Enderman" },
+		{ word: "bo nam", aliases: ["bonam", "mooshroom", "bò nấm"], display: "Mooshroom" },
+		{ word: "nguoi sat", aliases: ["nguoisat", "iron golem", "golem", "bảo vệ", "người sắt", "bo sat"], display: "Iron Golem" },
+		{ word: "rong ender", aliases: ["rongender", "ender dragon", "enderdragon", "rồng ender"], display: "Ender Dragon" },
+		{ word: "bo xuong", aliases: ["boxuong", "skeleton", "bộ xương"], display: "Skeleton" },
+
+		// Khối & Dụng cụ
+		{ word: "ban che tao", aliases: ["banchetao", "crafting table", "crafting", "bàn chế tạo", "workbench"], display: "Crafting Table" },
+		{ word: "lo nung", aliases: ["lonung", "furnace", "lò nung"], display: "Furnace" },
+		{ word: "de ren", aliases: ["deren", "anvil", "đe rèn", "đe"], display: "Anvil" },
+		{ word: "da nen", aliases: ["danen", "bedrock", "đá nền"], display: "Bedrock" },
+		{ word: "da hac dien", aliases: ["dahacdien", "obsidian", "hac dien thach", "đá hắc diện"], display: "Obsidian" }
 	];
 
 	private static readonly TYPER_CODES = [
@@ -38,21 +58,26 @@ export class ChatMinigameService {
 	];
 
 	/**
-	 * Check if there is an active minigame on server
+	 * Chuẩn hóa text: xóa dấu tiếng Việt, ký tự đặc biệt và khoảng trắng thừa
 	 */
+	private static normalizeText(text: string): string {
+		return text
+			.toLowerCase()
+			.normalize("NFD")
+			.replace(/[\u0300-\u036f]/g, "")
+			.replace(/đ/g, "d")
+			.replace(/[^a-z0-9]/g, ""); // gom hết về liền nhau: "kim cuong" -> "kimcuong"
+	}
+
 	public static hasActiveMinigame(server: string): boolean {
 		const s = server.toLowerCase().trim();
 		return this.activeGames.has(s);
 	}
 
-	/**
-	 * Start a random minigame on server
-	 */
 	public static startRandomMinigame(bot: Minecraft): void {
 		if (!bot.joined || !bot.config?.connection?.host) return;
 		const server = bot.config.connection.host.toLowerCase().trim();
 
-		// Don't start another if one is already running
 		if (this.activeGames.has(server)) return;
 
 		const types: ("math" | "scramble" | "typer")[] = ["math", "scramble", "typer"];
@@ -73,7 +98,7 @@ export class ChatMinigameService {
 				a = Math.floor(Math.random() * 80) + 15;
 				b = Math.floor(Math.random() * 80) + 15;
 				ans = a + b;
-				reward = Math.floor(Math.random() * 51) + 100; // 100 - 150 xu
+				reward = Math.floor(Math.random() * 51) + 100;
 			} else if (op === "-") {
 				a = Math.floor(Math.random() * 90) + 30;
 				b = Math.floor(Math.random() * (a - 10)) + 5;
@@ -83,30 +108,28 @@ export class ChatMinigameService {
 				a = Math.floor(Math.random() * 12) + 4;
 				b = Math.floor(Math.random() * 12) + 4;
 				ans = a * b;
-				reward = Math.floor(Math.random() * 51) + 150; // 150 - 200 xu
+				reward = Math.floor(Math.random() * 51) + 150;
 			}
 
-			questionText = `[Minigame] Ai tính nhanh nhất: ${a} ${op} ${b} = ? (Thưởng ${reward} xu)`;
+			questionText = `[Minigame] Thực hiện phép tính sau: "${a} ${op} ${b} = ?". Người nhanh nhất được ${reward} xu.`;
 			displayAnswer = String(ans);
 			validAnswers = [String(ans)];
 		} else if (chosenType === "scramble") {
 			const item = this.MINECRAFT_WORDS[Math.floor(Math.random() * this.MINECRAFT_WORDS.length)];
-			reward = Math.floor(Math.random() * 51) + 150; // 150 - 200 xu
-			questionText = `[Minigame] Sắp xếp lại từ Minecraft sau: "${item.display}" (Thưởng ${reward} xu)`;
-			displayAnswer = item.word;
+			reward = Math.floor(Math.random() * 51) + 150;
+			questionText = `[Minigame] Hãy nhập nhanh từ sau: "${item.display}". Người nhanh nhất được ${reward} xu.`;
+			displayAnswer = `${item.word.toUpperCase()} (${item.display.replace(/\s*\/\s*/g, " ")})`;
 			validAnswers = [item.word, ...item.aliases];
 		} else {
 			const code = this.TYPER_CODES[Math.floor(Math.random() * this.TYPER_CODES.length)];
-			reward = Math.floor(Math.random() * 51) + 100; // 100 - 150 xu
-			questionText = `[Minigame] Ai gõ nhanh nhất cụm từ: "${code}" (Thưởng ${reward} xu)`;
+			reward = Math.floor(Math.random() * 51) + 100;
+			questionText = `[Minigame] Gõ nhanh cụm từ "${code}". Người gõ nhanh nhất được ${reward} xu.`;
 			displayAnswer = code;
 			validAnswers = [code];
 		}
 
-		// Broadcast question
 		bot.chatQueue.send(questionText, ChatPriority.NORMAL);
 
-		// Setup timeout timer (45 seconds)
 		const timeoutTimer = setTimeout(() => {
 			this.onMinigameTimeout(bot, server);
 		}, 45 * 1000);
@@ -114,7 +137,7 @@ export class ChatMinigameService {
 		this.activeGames.set(server, {
 			type: chosenType,
 			questionText,
-			validAnswers: validAnswers.map(a => a.toLowerCase().trim()),
+			validAnswers: validAnswers.map(a => this.normalizeText(a)),
 			displayAnswer,
 			reward,
 			startedAt: Date.now(),
@@ -122,9 +145,6 @@ export class ChatMinigameService {
 		});
 	}
 
-	/**
-	 * Process incoming chat messages to check if it answers the active minigame
-	 */
 	public static async onChatMessage(
 		bot: Minecraft,
 		server: string,
@@ -136,20 +156,17 @@ export class ChatMinigameService {
 		const game = this.activeGames.get(s);
 		if (!game) return false;
 
-		const cleanMsg = message.trim().toLowerCase();
+		const cleanMsg = this.normalizeText(message);
 		const isCorrect = game.validAnswers.some(ans => ans === cleanMsg);
 
 		if (isCorrect) {
-			// Clear timeout timer
 			if (game.timeoutTimer) {
 				clearTimeout(game.timeoutTimer);
 			}
 			this.activeGames.delete(s);
 
-			// Award coins
 			await EconomyService.addBalance(s, senderUsername, senderDisplayName, game.reward, true);
 
-			// Announce winner
 			bot.chatQueue.send(
 				`[Minigame] Chúc mừng ${senderDisplayName} đã trả lời đúng nhanh nhất (Đáp án: ${game.displayAnswer}) và nhận được ${game.reward} xu!`,
 				ChatPriority.HIGH
@@ -160,9 +177,6 @@ export class ChatMinigameService {
 		return false;
 	}
 
-	/**
-	 * Handler when no one answered within 45 seconds
-	 */
 	private static onMinigameTimeout(bot: Minecraft, server: string): void {
 		const game = this.activeGames.get(server);
 		if (!game) return;
