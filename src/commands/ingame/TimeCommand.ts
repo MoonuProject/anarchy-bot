@@ -34,11 +34,11 @@ export class TimeCommand extends Command {
 		if (isNight) {
 			const ticksUntilDay = 24000 - timeOfDay;
 			const minsUntilDay = Math.ceil((ticksUntilDay / 20) / 60);
-			status = `Trời tối (có thể ngủ) - Khoảng ${minsUntilDay}p nữa trời sáng`;
+			status = `Trời tối (có thể ngủ) - Khoảng ${minsUntilDay} phút nữa trời sáng`;
 		} else {
 			const ticksUntilNight = 13000 - timeOfDay;
 			const minsUntilNight = Math.ceil((ticksUntilNight / 20) / 60);
-			status = `Trời sáng - Khoảng ${minsUntilNight}p nữa trời tối`;
+			status = `Trời sáng - Khoảng ${minsUntilNight} phút nữa trời tối`;
 		}
 
 		// Moon Phase

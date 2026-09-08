@@ -10,3 +10,4 @@ export * from "./LotteryService";
 export * from "./StalkService";
 export * from "./NoteService";
 export * from "./ChatMinigameService";
+export * from "./GamblingCooldownService";
